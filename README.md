@@ -7,7 +7,7 @@
 - [本資料🔗](/README.md)
 - [座学資料🔗](/doc/dd_embedded_education_learn.md)
 - [実技演習資料🔗](/doc/dd_embedded_education_tec.md)
-- [組み込み頻出ワード一覧🔗](/doc/dd_embedded_education_word.md)
+- [頻出用語一覧表🔗](/doc/dd_embedded_education_word.md)
 
 ---
 
