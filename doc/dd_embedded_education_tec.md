@@ -9,129 +9,182 @@
 
 ---
 
-## ステップ1：LEDの点灯・消灯をしよう！💡
+## ステップ1：LEDの点灯・消灯してみよう！
 
 ### 目標
 
-* ESP32の内蔵LEDを点灯・消灯できるようにする
+- 基板のLEDをマイコンに点灯・消灯させる
 
 ### 実習のポイント ✅
 
-* GPIOピンを**出力モード**に設定しよう
-* **HIGH**で点灯、**LOW**で消灯する仕組みを理解しよう
+- GPIOピンを**出力モード**に設定しよう
+- **HIGH**で点灯、**LOW**で消灯するのを理解しよう
 
-### コードの流れ🧠（コメント付き）
+### コード
 
 ```cpp
-void setup() {
-  pinMode(2, OUTPUT);  // GPIO 2 を出力モードに設定（内蔵LEDが接続されている）
+// LEDの定義
+#define LED_PIN     2    // LEDが接続されているピン番号
+#define DELAY_TIME  1000 // 1000ミリ秒 = 1秒
+
+void setup()
+{
+    // LEDピンを出力(OUTPUT)モードに設定処理
+    pinMode(LED_PIN, OUTPUT);
 }
 
-void loop() {
-  digitalWrite(2, HIGH);  // LEDを点灯
-  delay(1000);            // 1秒待つ
-  digitalWrite(2, LOW);   // LEDを消灯
-  delay(1000);            // 1秒待つ
+void loop()
+{
+    // LED点灯
+    digitalWrite(LED_PIN, HIGH);
+    delay(DELAY_TIME);
+
+    // LED消灯
+    digitalWrite(LED_PIN, LOW);
+    delay(DELAY_TIME);
 }
 ```
 
 ---
 
-## ステップ2：センサーで温度・湿度・気圧を取得しよう🌡️
+## ステップ2：：文字を表示してみよう！
 
-### 使用デバイス
+### 目標
 
-* BME280 センサー（I2C通信）
+- 基板のマイコンに文字をシリアル通信（UART）で表示させる
 
 ### 実習のポイント ✅
 
-* I2C通信の**ライブラリ利用**方法を学ぼう
-* センサーからの値を**float型**で扱おう
+- 表示する文字を変えてみよう
+- シリアル通信を理解しよう
 
-### コードの流れ🧠（コメント付き）
-
+### コード
 ```cpp
-#include <Wire.h>                  // I2C通信ライブラリ
-#include <Adafruit_BME280.h>      // BME280用ライブラリ
+// シリアル通信の設定
+#define BAUD_RATE    115200  // UART通信ボーレート
+#define DELAY_TIME   1000    // 送信間隔（ミリ秒）
 
-Adafruit_BME280 bme;              // センサーのインスタンスを作成
-
-void setup() {
-  Wire.begin();                   // I2C通信の開始
-  bool status = bme.begin(0x76); // センサー初期化（I2Cアドレス指定）
-  if (!status) {
-    Serial.println("BME280が見つかりませんでした");
-    while (1); // 初期化失敗時は停止
-  }
+void setup()
+{
+    // シリアル通信(UART)の初期化
+    Serial.begin(BAUD_RATE);
 }
 
-void loop() {
-  float temp = bme.readTemperature();   // 温度を取得
-  float hum  = bme.readHumidity();      // 湿度を取得
-  float pres = bme.readPressure() / 100.0F; // 気圧（hPa）を取得
+void loop()
+{
+    // メッセージを送信
+    Serial.println("Hello from ESP32!");
 
-  // 値をシリアルモニタに出力
-  Serial.print("気温: "); Serial.print(temp); Serial.println(" *C");
-  Serial.print("湿度: "); Serial.print(hum);  Serial.println(" %");
-  Serial.print("気圧: "); Serial.print(pres); Serial.println(" hPa");
-
-  delay(2000); // 2秒ごとに更新
+    // 一定時間待機
+    delay(DELAY_TIME);
 }
 ```
 
 ---
 
-## ステップ3：WiFiに接続してLEDを操作しよう！🌐💡
+## ステップ3：WiFiに接続してLEDを遠隔操作してみよう！
 
-### 概要
+### 目標
 
-* ESP32をWiFiに接続し、WebブラウザからLEDの制御ができるようにする
+- マイコンのWiFiに接続してWEBブラウザからLEDを制御ができるようにする
 
 ### 実習のポイント ✅
 
-* WiFi接続の状態を確認する方法を覚えよう
-* クライアントが来たときにHTTPレスポンスを返そう
+- WiFiに接続してみよう！
+- HTMLでLDEをON、OFFをしてみよう！
 
-### コードの流れ🧠（コメント付き）
+### コード
 
 ```cpp
 #include <WiFi.h>
 
-const char* ssid = "YOUR_SSID";          // WiFiのSSIDを入力
-const char* password = "YOUR_PASSWORD";  // パスワードを入力
+// WiFi APの設定
+#define AP_SSID     "ESP32_AP"    // APのSSID
+#define AP_PASSWORD "12345678"    // APのパスワード
+#define AP_CHANNEL  1             // WiFiチャンネル
+#define AP_MAX_CONN 4             // 最大接続数
 
-WiFiServer server(80);                   // ポート80番でWebサーバを用意
+// LEDの設定
+#define LED_PIN     2             // LEDが接続されているピン番号
 
-void setup() {
-  Serial.begin(115200);
-  pinMode(2, OUTPUT);                    // LED用ピンを出力に設定
+// Webサーバーの設定
+#define WEB_PORT    80            // HTTPポート番号
 
-  WiFi.begin(ssid, password);            // WiFiに接続開始
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("接続中...");
-  }
-  Serial.println("WiFi接続完了");
-  Serial.println(WiFi.localIP());        // IPアドレスを表示
+// WiFiサーバーのインスタンス作成
+WiFiServer server(WEB_PORT);
 
-  server.begin();                        // サーバ起動
+void setup()
+{
+    // シリアル通信の初期化
+    Serial.begin(115200);
+
+    // LEDピンを出力モードに設定
+    pinMode(LED_PIN, OUTPUT);
+
+    // WiFi APの設定
+    WiFi.softAP(AP_SSID, AP_PASSWORD, AP_CHANNEL, 0, AP_MAX_CONN);
+    // APのIPアドレスを表示
+    Serial.println("WiFi AP Started");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.softAPIP());
+    // Webサーバーを開始
+    server.begin();
+    Serial.println("HTTP server started");
 }
 
-void loop() {
-  WiFiClient client = server.available();
-  if (client) {
-    Serial.println("クライアントが接続しました");
-    client.println("HTTP/1.1 200 OK");
-    client.println("Content-type:text/html");
-    client.println();
+void loop()
+{
+    // クライアントからの接続を待機
+    WiFiClient client = server.available();
+    if (client) {
+        Serial.println("New Client connected");
+        String currentLine = "";
+        while (client.connected()) {
+            if (client.available()) {
+                char c = client.read();
+                Serial.write(c);
+                if (c == '\n') {
+                    if (currentLine.length() == 0) {
+                        // HTTPレスポンスヘッダー
+                        client.println("HTTP/1.1 200 OK");
+                        client.println("Content-type:text/html");
+                        client.println();
+                        // HTMLコンテンツ
+                        client.println("<!DOCTYPE html><html>");
+                        client.println("<head><meta name='viewport' content='width=device-width, initial-scale=1'>");
+                        client.println("<title>ESP32 LED Control</title>");
+                        client.println("<style>");
+                        client.println("body { font-family: Arial; text-align: center; margin: 20px; }");
+                        client.println(".button { background-color: #4CAF50; border: none; color: white; padding: 15px 32px;");
+                        client.println("text-align: center; text-decoration: none; display: inline-block; font-size: 16px;");
+                        client.println("margin: 4px 2px; cursor: pointer; border-radius: 4px; }");
+                        client.println("</style></head>");
+                        // ボディ
+                        client.println("<body>");
+                        client.println("<h1>ESP32 LED Control</h1>");
+                        client.println("<p><a href='/on'><button class='button'>ON</button></a></p>");
+                        client.println("<p><a href='/off'><button class='button'>OFF</button></a></p>");
+                        client.println("</body></html>");
+                        break;
+                    } else {
+                        // LEDの制御
+                        if (currentLine.indexOf("GET /on") >= 0) {
+                            digitalWrite(LED_PIN, HIGH);
+                        } else if (currentLine.indexOf("GET /off") >= 0) {
+                            digitalWrite(LED_PIN, LOW);
+                        }
+                        currentLine = "";
+                    }
+                } else if (c != '\r') {
+                    currentLine += c;
+                }
+            }
+        }
 
-    // LEDの状態を反転（ON→OFF→ON...）
-    digitalWrite(2, !digitalRead(2));
-
-    // HTMLレスポンスを返す
-    client.println("<h1>LEDが切り替わりました！</h1>");
-    client.stop();
-  }
+        // クライアント接続を終了
+        client.stop();
+        Serial.println("Client disconnected");
+    }
 }
 ```
 
@@ -139,4 +192,4 @@ void loop() {
 
 ## 質疑応答 💬
 
-* わからなかったことはここで聞いてみましょう！
+- わからなかったことはここで聞いてみましょう！
